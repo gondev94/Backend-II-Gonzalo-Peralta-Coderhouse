@@ -4,6 +4,7 @@ import { mongoConnect } from "./src/database/mongooConect.js";
 import cookieParser from "cookie-parser";
 import session from "express-session";
 import MongoStore from "connect-mongo";
+import sessionsRouter from "./src/routes/sessionsRouter.js";
 
 const app = express();
 app.use(express.json());
@@ -23,6 +24,7 @@ app.use(session({
     })
 );
 app.use("/api/users", usersRouter);
+app.use("/api/sessions", sessionsRouter);
 
 app.get("/session", async (req, res, next) => {
     res.json(req.session.user);
