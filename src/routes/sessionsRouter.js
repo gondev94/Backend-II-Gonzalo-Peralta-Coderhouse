@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { UserModel } from "../models/usersModel.js";
+import { isValidPassword } from "../../utils.js";
 
 const router = Router();
 
@@ -18,9 +19,10 @@ router.post("/login", async (req, res, next) => {
     const { email, password } = req.body;
     try {
         const user = await UserModel.findOne({ email });
-        if (user) {
+        if (isValidPassword(password, user.password)) {
             req.session.user = user;
             res.status(200).json({ message: "Login successful" });
+           
         } else {
             res.status(401).json({ message: "Invalid email or password" });
         }

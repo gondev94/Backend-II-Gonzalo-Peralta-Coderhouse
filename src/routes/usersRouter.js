@@ -1,5 +1,7 @@
 import { Router } from "express";
 import { UserModel } from "../models/usersModel.js";
+import { createHash } from "../../utils.js";
+
 const router = Router();
 
 router.get("/", async (req, res, next) => {
@@ -11,15 +13,16 @@ router.get("/", async (req, res, next) => {
     }
 });
 
-router.post("/create", async (req, res, next) => {
+router.post("/register", async (req, res, next) => {
     const { first_name, last_name, email, role, password } = req.body;
+
     try {
         const user = await UserModel.create({
             first_name,
             last_name,
             email,
             role,
-            password,
+            password: createHash(password),
         });
         res.status(201).json(user);
     } catch (error) {
