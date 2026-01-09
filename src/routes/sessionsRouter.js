@@ -1,35 +1,75 @@
 import { Router } from "express";
-import { UserModel } from "../models/usersModel.js";
-import { isValidPassword } from "../../utils.js";
+import passport from "passport";
+import { generateToken } from "../config/passport.js";
 
 const router = Router();
 
-router.post("/register", async (req, res, next) => {
-    const user = req.body;
-    try {
-        const users = await UserModel.create(user);
-        res.status(201).json(users);
-    } catch (error) {
-        console.log(error);
-        res.status(500).json({ message: "Internal server error" });
-    }
-});
-
-router.post("/login", async (req, res, next) => {
-    const { email, password } = req.body;
-    try {
-        const user = await UserModel.findOne({ email });
-        if (isValidPassword(password, user.password)) {
-            req.session.user = user;
-            res.status(200).json({ message: "Login successful" });
-           
-        } else {
-            res.status(401).json({ message: "Invalid email or password" });
+router.post(
+    "/register",
+    passport.authenticate("register", { session: false, failureMessage: true }),
+    async (req, res) => {
+        try {
+            const token = generateToken(req.user);
+            res.cookie("jwt-cookie", token, {
+                httpOnly: true,
+                maxAge: 24 * 60 * 60 * 1000,
+            });
+            res.status(201).json({
+                message: "User registered successfully",
+                user: req.user,
+            });
+        } catch (error) {
+            console.log(error);
+            res.status(500).json({ message: "Internal server error" });
         }
-    } catch (error) {
-        console.log(error);
-        res.status(500).json({ message: "Internal server error" });
+    },
+    (err, req, res, next) => {
+        res.status(400).json({ message: err.message || "Registration failed" });
     }
-});
+);
+
+router.post(
+    "/login",
+    passport.authenticate("login", { session: false, failureMessage: true }),
+    async (req, res) => {
+        try {
+            const token = generateToken(req.user);
+            res.cookie("jwt-cookie", token, {
+                httpOnly: true,
+                maxAge: 24 * 60 * 60 * 1000,
+            });
+            res.status(200).json({
+                message: "Login successful",
+                user: req.user,
+            });
+        } catch (error) {
+            console.log(error);
+            res.status(500).json({ message: "Internal server error" });
+        }
+    },
+    (err, req, res, next) => {
+        res.status(401).json({
+            message: err.message || "Authentication failed",
+        });
+    }
+);
+
+router.get(
+    "/current",
+    passport.authenticate("current", { session: false, failureMessage: true }),
+    async (req, res) => {
+        try {
+            res.status(200).json({ user: req.user });
+        } catch (error) {
+            console.log(error);
+            res.status(500).json({ message: "Internal server error" });
+        }
+    },
+    (err, req, res, next) => {
+        res.status(401).json({
+            message: "Unauthorized - Invalid or missing token",
+        });
+    }
+);
 
 export default router;

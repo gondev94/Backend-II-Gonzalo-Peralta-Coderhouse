@@ -2,19 +2,35 @@ import mongoose from "mongoose";
 
 
 const userSchema = new mongoose.Schema({
-    first_name:String,
-    last_name: String,
-    email:{
+    first_name: {
+        type: String,
+        required: true
+    },
+    last_name: {
+        type: String,
+        required: true
+    },
+    email: {
         type: String,
         unique: true,
+        required: true
     },
-    role: {
-        type: String,
-        default: "user",
+    age: {
+        type: Number,
+        required: true
     },
     password: {
         type: String,
         required: true,
+    },
+    cart: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "carts",
+        default: null
+    },
+    role: {
+        type: String,
+        default: "user",
     }
 })
 

@@ -2,7 +2,7 @@ import express from "express";
 import usersRouter from "./src/routes/usersRouter.js";
 import { engine } from "express-handlebars";
 import { mongoConnect } from "./src/database/mongooConect.js";
-import { serverRoot } from "./utils.js"
+import { serverRoot } from "./utils.js";
 import cookieParser from "cookie-parser";
 import session from "express-session";
 import viewsRouter from "./src/routes/viewsRouter.js";
@@ -15,16 +15,17 @@ const app = express();
 
 app.engine("handlebars", engine());
 app.set("view engine", "handlebars");
-app.set("views", serverRoot + "/views")
+app.set("views", serverRoot + "/src/views");
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(serverRoot + "/public"));
 
 app.use(cookieParser("firmadelserlserver"));
-app.use(session({
+app.use(
+    session({
         store: new MongoStore({
             autoRemove: "interval",
-            autoRemoveInterval: 1,            
+            autoRemoveInterval: 1,
             mongoUrl: "mongodb://localhost:27017/integrative_activity",
             ttl: 10,
         }),
@@ -33,6 +34,10 @@ app.use(session({
         saveUninitialized: false,
     })
 );
+
+initializePassport();
+app.use(passport.initialize());
+
 app.use("/api/users", usersRouter);
 app.use("/api/sessions", sessionsRouter);
 app.use("/", viewsRouter);
@@ -45,7 +50,6 @@ app.post("/session", async (req, res, next) => {
     req.session.user = req.body;
     res.json({ message: "Session set" });
 });
-
 
 const PORT = 7777;
 app.listen(PORT, () => {
