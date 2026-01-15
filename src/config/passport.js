@@ -5,10 +5,9 @@ import { UserModel } from "../models/usersModel.js";
 import { createHash, isValidPassword } from "../../utils.js";
 import jwt from "jsonwebtoken";
 
-const JWT_SECRET = "firmadelserlserver"; // Deberías usar una variable de entorno
+const JWT_SECRET = "firmadelserlserver"; 
 
 export function initializePassport() {
-
     passport.use(
         "register",
         new LocalStrategy(

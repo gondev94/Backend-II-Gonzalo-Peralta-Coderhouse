@@ -14,7 +14,7 @@ router.get("/", async (req, res, next) => {
 });
 
 router.post("/register", async (req, res, next) => {
-    const { first_name, last_name, email, age, role, password } = req.body;
+    const { first_name, last_name, email, role, password } = req.body;
     if (!first_name || !last_name || !email || !age || !role || !password) {
         return res.status(400).json({ message: "All fields are required" });
     }
@@ -26,7 +26,6 @@ router.post("/register", async (req, res, next) => {
             first_name,
             last_name,
             email,
-            age,
             role,
             password: createHash(password),
         });
