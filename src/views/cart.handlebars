@@ -1,0 +1,172 @@
+<link rel="stylesheet" href="/css/cart.css">
+
+<div class="cart-container">
+    <div class="cart-header">
+        <h1> Mi Carrito</h1>
+        <a href="/products" class="btn btn-secondary">← Seguir Comprando</a>
+    </div>
+
+    {{#if products.length}}
+    <div class="cart-content">
+        <div class="cart-items">
+            {{#each products}}
+            <div class="cart-item" data-product-id="{{this.product._id}}">
+                <div class="cart-item-image"></div>
+                <div class="cart-item-details">
+                    <h3>{{this.product.title}}</h3>
+                    <p class="cart-item-price">${{this.product.price}}</p>
+                </div>
+                <div class="cart-item-quantity">
+                    <button class="qty-btn minus" data-id="{{this.product._id}}">-</button>
+                    <span class="qty-value">{{this.quantity}}</span>
+                    <button class="qty-btn plus" data-id="{{this.product._id}}">+</button>
+                </div>
+                <div class="cart-item-subtotal">
+                    ${{multiply this.product.price this.quantity}}
+                </div>
+                <button class="btn-remove" data-id="{{this.product._id}}"></button>
+            </div>
+            {{/each}}
+        </div>
+
+        <div class="cart-summary">
+            <h2>Resumen del Pedido</h2>
+            <div class="summary-row">
+                <span>Subtotal</span>
+                <span>${{total}}</span>
+            </div>
+            <div class="summary-row total">
+                <span>Total</span>
+                <span>${{total}}</span>
+            </div>
+            
+            <div class="cart-actions">
+                <button id="cancelBtn" class="btn btn-danger">
+                     Cancelar Compra
+                </button>
+                <button id="purchaseBtn" class="btn btn-success">
+                     Realizar Compra
+                </button>
+            </div>
+        </div>
+    </div>
+    {{else}}
+    <div class="empty-cart">
+        <div class="empty-cart-icon"></div>
+        <p>Tu carrito está vacío</p>
+        <a href="/products" class="btn btn-primary">Ver Productos</a>
+    </div>
+    {{/if}}
+</div>
+
+<div id="modal" class="modal">
+    <div class="modal-content">
+        <h2 id="modalTitle"></h2>
+        <p id="modalMessage"></p>
+        <div id="ticketInfo" class="ticket-info"></div>
+        <button onclick="closeModal()" class="btn btn-primary">Aceptar</button>
+    </div>
+</div>
+
+<script>
+const cartId = '{{cartId}}';
+
+// Actualizar cantidad
+document.querySelectorAll('.qty-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+        const productId = btn.dataset.id;
+        const item = btn.closest('.cart-item');
+        const qtySpan = item.querySelector('.qty-value');
+        let qty = parseInt(qtySpan.textContent);
+        
+        if (btn.classList.contains('plus')) {
+            qty++;
+        } else {
+            qty = Math.max(1, qty - 1);
+        }
+        
+        const res = await fetch(`/api/carts/${cartId}/products/${productId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ quantity: qty })
+        });
+        
+        if (res.ok) {
+            location.reload();
+        }
+    });
+});
+
+// Eliminar producto
+document.querySelectorAll('.btn-remove').forEach(btn => {
+    btn.addEventListener('click', async () => {
+        const productId = btn.dataset.id;
+        
+        const res = await fetch(`/api/carts/${cartId}/products/${productId}`, {
+            method: 'DELETE'
+        });
+        
+        if (res.ok) {
+            location.reload();
+        }
+    });
+});
+
+// Cancelar compra
+document.getElementById('cancelBtn')?.addEventListener('click', async () => {
+    if (!confirm('¿Estás seguro de cancelar? Se vaciarán todos los productos.')) {
+        return;
+    }
+    
+    const res = await fetch(`/api/carts/${cartId}`, {
+        method: 'DELETE'
+    });
+    
+    if (res.ok) {
+        showModal('Compra Cancelada', 'Tu carrito ha sido vaciado.');
+        setTimeout(() => location.reload(), 2000);
+    }
+});
+
+// Realizar compra
+document.getElementById('purchaseBtn')?.addEventListener('click', async () => {
+    const res = await fetch(`/api/carts/${cartId}/purchase`, {
+        method: 'POST'
+    });
+    const data = await res.json();
+    
+    if (data.status === 'success') {
+        const ticket = data.payload.ticket;
+        let ticketHtml = `
+            <p><strong>Código:</strong> ${ticket.code}</p>
+            <p><strong>Total:</strong> $${ticket.amount}</p>
+            <p><strong>Fecha:</strong> ${new Date(ticket.purchase_datetime).toLocaleString()}</p>
+        `;
+        
+        if (data.payload.failedProducts) {
+            ticketHtml += `<p class="warning"> Algunos productos no tenían stock suficiente</p>`;
+        }
+        
+        document.getElementById('ticketInfo').innerHTML = ticketHtml;
+        document.getElementById('ticketInfo').style.display = 'block';
+        showModal('¡Compra Exitosa!', 'Tu compra ha sido procesada correctamente.');
+        
+        setTimeout(() => {
+            window.location.href = '/products';
+        }, 4000);
+    } else {
+        document.getElementById('ticketInfo').style.display = 'none';
+        showModal('Error', data.message || 'No se pudo procesar la compra');
+    }
+});
+
+function showModal(title, message) {
+    document.getElementById('modalTitle').textContent = title;
+    document.getElementById('modalMessage').textContent = message;
+    document.getElementById('modal').classList.add('show');
+}
+
+function closeModal() {
+    document.getElementById('modal').classList.remove('show');
+}
+</script>

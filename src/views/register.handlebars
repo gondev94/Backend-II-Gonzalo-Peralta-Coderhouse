@@ -2,8 +2,8 @@
 
 <div class="auth-container">
     <div class="auth-card">
-        <h1>Iniciar Sesión</h1>
-        <p class="subtitle">Bienvenido de vuelta</p>
+        <h1>Crear Cuenta</h1>
+        <p class="subtitle">Únete a nuestra comunidad</p>
         
         <!-- Botón de Google -->
         <a href="/api/sessions/google" class="btn-google">
@@ -13,31 +13,38 @@
                 <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
                 <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
             </svg>
-            Continuar con Google
+            Registrarse con Google
         </a>
         
         <div class="divider">
             <span>o</span>
         </div>
         
-        <form id="loginForm" class="auth-form">
+        <form id="registerForm" class="auth-form">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Nombre</label>
+                    <input type="text" name="first_name" id="first_name" required>
+                </div>
+                <div class="form-group">
+                    <label>Apellido</label>
+                    <input type="text" name="last_name" id="last_name" required>
+                </div>
+            </div>
             <div class="form-group">
                 <label>Email</label>
                 <input type="email" name="email" id="email" required>
             </div>
             <div class="form-group">
                 <label>Contraseña</label>
-                <input type="password" name="password" id="password" required>
+                <input type="password" name="password" id="password" required minlength="6">
             </div>
-            <button type="submit" class="btn btn-primary">Ingresar</button>
+            <button type="submit" class="btn btn-primary">Registrarse</button>
         </form>
         
         <div id="message" class="auth-message"></div>
         
-        <p class="auth-links">
-            <a href="/forgot-password">¿Olvidaste tu contraseña?</a>
-        </p>
-        <p class="auth-links">¿No tienes cuenta? <a href="/register">Regístrate</a></p>
+        <p class="auth-links">¿Ya tienes cuenta? <a href="/login">Inicia sesión</a></p>
     </div>
 </div>
 
@@ -87,40 +94,29 @@
 </style>
 
 <script>
-// Mostrar errores de Google si existen
-const urlParams = new URLSearchParams(window.location.search);
-const errorType = urlParams.get('error');
-const messageDiv = document.getElementById('message');
-
-if (errorType === 'google') {
-    messageDiv.className = 'auth-message error';
-    messageDiv.textContent = 'Error al iniciar sesión con Google';
-} else if (errorType === 'google_not_configured') {
-    messageDiv.className = 'auth-message error';
-    messageDiv.textContent = 'Google OAuth no está configurado. Usa email y contraseña.';
-}
-
-document.getElementById('loginForm').addEventListener('submit', async (e) => {
+document.getElementById('registerForm').addEventListener('submit', async (e) => {
     e.preventDefault();
+    const first_name = document.getElementById('first_name').value;
+    const last_name = document.getElementById('last_name').value;
     const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
     const messageDiv = document.getElementById('message');
     
     try {
-        const res = await fetch('/api/sessions/login', {
+        const res = await fetch('/api/sessions/register', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password })
+            body: JSON.stringify({ first_name, last_name, email, password })
         });
         const data = await res.json();
         
         if (data.status === 'success') {
             messageDiv.className = 'auth-message success';
-            messageDiv.textContent = '¡Bienvenido! Redirigiendo...';
-            setTimeout(() => window.location.href = '/products', 1000);
+            messageDiv.textContent = '¡Cuenta creada! Redirigiendo...';
+            setTimeout(() => window.location.href = '/products', 1500);
         } else {
             messageDiv.className = 'auth-message error';
-            messageDiv.textContent = data.message || 'Error al iniciar sesión';
+            messageDiv.textContent = data.message || 'Error al registrar';
         }
     } catch (error) {
         messageDiv.className = 'auth-message error';

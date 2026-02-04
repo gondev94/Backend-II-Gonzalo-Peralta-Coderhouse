@@ -1,60 +1,89 @@
+import "dotenv/config";
 import express from "express";
-import usersRouter from "./src/routes/usersRouter.js";
 import { engine } from "express-handlebars";
-import { mongoConnect } from "./src/database/mongooConect.js";
-import { serverRoot } from "./utils.js";
 import cookieParser from "cookie-parser";
 import session from "express-session";
-import viewsRouter from "./src/routes/viewsRouter.js";
 import MongoStore from "connect-mongo";
-import sessionsRouter from "./src/routes/sessionsRouter.js";
 import passport from "passport";
+
+import { mongoConnect } from "./src/database/mongooConect.js";
 import { initializePassport } from "./src/config/passport.js";
+import { serverRoot } from "./utils.js";
+
+// Rutas
+import usersRouter from "./src/routes/usersRouter.js";
+import sessionsRouter from "./src/routes/sessionsRouter.js";
+import productsRouter from "./src/routes/productsRouter.js";
+import cartsRouter from "./src/routes/cartsRouter.js";
+import viewsRouter from "./src/routes/viewsRouter.js";
 
 const app = express();
 
-app.engine("handlebars", engine());
+// Variables de entorno
+const PORT = process.env.PORT || 7777;
+const MONGO_URL = process.env.MONGODB_URI || "mongodb://localhost:27017/integrative_activity";
+const SESSION_SECRET = process.env.SESSION_SECRET || "secret";
+const COOKIE_SECRET = process.env.COOKIE_SECRET || "firmadelserlserver";
+
+// Configuración de Handlebars con helpers
+app.engine("handlebars", engine({
+    helpers: {
+        eq: (a, b) => a === b,
+        multiply: (a, b) => a * b,
+        lt: (a, b) => a < b,
+        gt: (a, b) => a > b,
+        and: (a, b) => a && b,
+        or: (a, b) => a || b,
+    }
+}));
 app.set("view engine", "handlebars");
 app.set("views", serverRoot + "/src/views");
+
+// Middlewares
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(serverRoot + "/public"));
+app.use(cookieParser(COOKIE_SECRET));
 
-app.use(cookieParser("firmadelserlserver"));
+// Sesiones
 app.use(
     session({
         store: new MongoStore({
-            autoRemove: "interval",
-            autoRemoveInterval: 1,
-            mongoUrl: "mongodb://localhost:27017/integrative_activity",
-            ttl: 10,
+            mongoUrl: MONGO_URL,
+            ttl: 3600,
         }),
-        secret: "secret",
+        secret: SESSION_SECRET,
         resave: false,
         saveUninitialized: false,
     })
 );
 
+// Passport
 initializePassport();
 app.use(passport.initialize());
 
+// Rutas API
 app.use("/api/users", usersRouter);
 app.use("/api/sessions", sessionsRouter);
+app.use("/api/products", productsRouter);
+app.use("/api/carts", cartsRouter);
+
+// Rutas de vistas
 app.use("/", viewsRouter);
 
-app.get("/session", async (req, res, next) => {
-    res.json(req.session.user);
+// Error 404
+app.use((req, res) => {
+    res.status(404).json({ status: "error", message: "Ruta no encontrada" });
 });
 
-app.post("/session", async (req, res, next) => {
-    req.session.user = req.body;
-    res.json({ message: "Session set" });
-});
-
-const PORT = 7777;
-app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
-    mongoConnect()
-        .then(() => console.log("Connected to MongoDB"))
-        .catch((error) => console.log(error));
+// Iniciar servidor
+app.listen(PORT, async () => {
+    console.log(`Server is running on port ${PORT}`);
+    
+    try {
+        await mongoConnect();
+        console.log("Conectado a MongoDB");
+    } catch (error) {
+        console.error("Error conectando a MongoDB:", error);
+    }
 });

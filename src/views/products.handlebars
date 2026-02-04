@@ -1,0 +1,83 @@
+<link rel="stylesheet" href="/css/products.css">
+
+<div class="products-container">
+    <div class="products-header">
+        <h1>🛍️ Productos</h1>
+        <div class="products-header-actions">
+            {{#if user}}
+                <span class="products-welcome">Hola, {{user.first_name}}!</span>
+                {{#unless (eq user.role "admin")}}
+                <a href="/cart" class="btn btn-primary"> Mi Carrito</a>
+                {{/unless}}
+                {{#if (eq user.role "admin")}}
+                <a href="/admin/products" class="btn btn-warning"> Gestionar</a>
+                {{/if}}
+                <a href="/profile" class="btn btn-secondary">Mi Perfil</a>
+            {{else}}
+                <a href="/login" class="btn btn-primary">Iniciar Sesión</a>
+            {{/if}}
+        </div>
+    </div>
+
+    <div class="products-grid">
+        {{#each products}}
+        <div class="product-card">
+            <div class="product-image"></div>
+            <h3>{{this.title}}</h3>
+            <p class="product-description">{{this.description}}</p>
+            <span class="product-category">{{this.category}}</span>
+            <p class="product-price">${{this.price}}</p>
+            <p class="product-stock {{#if (lt this.stock 5)}}low{{/if}}">Stock: {{this.stock}}</p>
+            {{#if ../user}}
+                {{#unless (eq ../user.role "admin")}}
+                <button class="btn btn-primary add-to-cart" data-id="{{this._id}}">
+                    Agregar al Carrito
+                </button>
+                {{/unless}}
+            {{/if}}
+        </div>
+        {{else}}
+        <p class="no-products">No hay productos disponibles</p>
+        {{/each}}
+    </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+document.querySelectorAll('.add-to-cart').forEach(btn => {
+    btn.addEventListener('click', async () => {
+        const productId = btn.dataset.id;
+        
+        const cartRes = await fetch('/api/carts/my-cart');
+        const cartData = await cartRes.json();
+        
+        if (cartData.status !== 'success') {
+            showToast('Error al obtener carrito', 'error');
+            return;
+        }
+        
+        const cartId = cartData.payload._id;
+        
+        const res = await fetch(`/api/carts/${cartId}/products/${productId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ quantity: 1 })
+        });
+        const data = await res.json();
+        
+        if (data.status === 'success') {
+            showToast('Producto agregado al carrito', 'success');
+        } else {
+            showToast(data.message || 'Error al agregar', 'error');
+        }
+    });
+});
+
+function showToast(message, type) {
+    const toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.className = `toast ${type} show`;
+    setTimeout(() => toast.classList.remove('show'), 3000);
+}
+</script>

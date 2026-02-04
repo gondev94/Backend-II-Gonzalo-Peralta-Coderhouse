@@ -1,0 +1,168 @@
+<link rel="stylesheet" href="/css/admin.css">
+
+<div class="admin-container">
+    <div class="admin-header">
+        <h1> Gestión de Productos</h1>
+        <div class="admin-header-actions">
+            <button id="newProductBtn" class="btn btn-success">+ Nuevo Producto</button>
+            <a href="/profile" class="btn btn-secondary">Mi Perfil</a>
+        </div>
+    </div>
+
+    <div class="admin-table-container">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>Título</th>
+                    <th>Código</th>
+                    <th>Precio</th>
+                    <th>Stock</th>
+                    <th>Categoría</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{#each products}}
+                <tr data-id="{{this._id}}">
+                    <td>{{this.title}}</td>
+                    <td>{{this.code}}</td>
+                    <td>${{this.price}}</td>
+                    <td>{{this.stock}}</td>
+                    <td>{{this.category}}</td>
+                    <td class="actions">
+                        <button class="btn-icon edit" data-id="{{this._id}}">edit</button>
+                        <button class="btn-icon delete" data-id="{{this._id}}">delete</button>
+                    </td>
+                </tr>
+                {{else}}
+                <tr><td colspan="6" class="empty">No hay productos</td></tr>
+                {{/each}}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div id="productModal" class="admin-modal">
+    <div class="admin-modal-content">
+        <h2 id="modalTitle">Nuevo Producto</h2>
+        <form id="productForm" class="admin-form">
+            <input type="hidden" id="productId">
+            <div class="form-group">
+                <label>Título</label>
+                <input type="text" id="title" required>
+            </div>
+            <div class="form-group">
+                <label>Descripción</label>
+                <textarea id="description" required></textarea>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Código</label>
+                    <input type="text" id="code" required>
+                </div>
+                <div class="form-group">
+                    <label>Precio</label>
+                    <input type="number" id="price" min="0" step="0.01" required>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Stock</label>
+                    <input type="number" id="stock" min="0" required>
+                </div>
+                <div class="form-group">
+                    <label>Categoría</label>
+                    <input type="text" id="category" required>
+                </div>
+            </div>
+            <div class="form-actions">
+                <button type="button" onclick="closeModal()" class="btn btn-secondary">Cancelar</button>
+                <button type="submit" class="btn btn-primary">Guardar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Nuevo producto
+document.getElementById('newProductBtn').addEventListener('click', () => {
+    document.getElementById('modalTitle').textContent = 'Nuevo Producto';
+    document.getElementById('productForm').reset();
+    document.getElementById('productId').value = '';
+    document.getElementById('productModal').classList.add('show');
+});
+
+// Editar producto
+document.querySelectorAll('.btn-icon.edit').forEach(btn => {
+    btn.addEventListener('click', async () => {
+        const id = btn.dataset.id;
+        const res = await fetch(`/api/products/${id}`);
+        const data = await res.json();
+        
+        if (data.status === 'success') {
+            const p = data.payload;
+            document.getElementById('modalTitle').textContent = 'Editar Producto';
+            document.getElementById('productId').value = p._id;
+            document.getElementById('title').value = p.title;
+            document.getElementById('description').value = p.description;
+            document.getElementById('code').value = p.code;
+            document.getElementById('price').value = p.price;
+            document.getElementById('stock').value = p.stock;
+            document.getElementById('category').value = p.category;
+            document.getElementById('productModal').classList.add('show');
+        }
+    });
+});
+
+// Eliminar producto
+document.querySelectorAll('.btn-icon.delete').forEach(btn => {
+    btn.addEventListener('click', async () => {
+        if (!confirm('¿Eliminar este producto?')) return;
+        
+        const id = btn.dataset.id;
+        const res = await fetch(`/api/products/${id}`, { method: 'DELETE' });
+        
+        if (res.ok) {
+            location.reload();
+        } else {
+            alert('Error al eliminar');
+        }
+    });
+});
+
+// Guardar producto
+document.getElementById('productForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const id = document.getElementById('productId').value;
+    const productData = {
+        title: document.getElementById('title').value,
+        description: document.getElementById('description').value,
+        code: document.getElementById('code').value,
+        price: parseFloat(document.getElementById('price').value),
+        stock: parseInt(document.getElementById('stock').value),
+        category: document.getElementById('category').value
+    };
+    
+    const url = id ? `/api/products/${id}` : '/api/products';
+    const method = id ? 'PUT' : 'POST';
+    
+    const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(productData)
+    });
+    
+    const data = await res.json();
+    
+    if (data.status === 'success') {
+        location.reload();
+    } else {
+        alert(data.message || 'Error al guardar');
+    }
+});
+
+function closeModal() {
+    document.getElementById('productModal').classList.remove('show');
+}
+</script>

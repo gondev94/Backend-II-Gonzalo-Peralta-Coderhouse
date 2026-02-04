@@ -1,3 +1,42 @@
-<p>Nombre: {{first_name}}</p>
-<p>Apellido: {{last_name}}</p>
-<p>Email: {{email}}</p>
+<link rel="stylesheet" href="/css/profile.css">
+
+<div class="profile-container">
+    <div class="profile-card">
+        <div class="profile-avatar">{{first_name.[0]}}</div>
+        <h1>{{first_name}} {{last_name}}</h1>
+        <span class="role-badge {{role}}">{{role}}</span>
+        
+        <div class="profile-info">
+            <div class="profile-info-item">
+                <span class="label"> Email</span>
+                <span class="value">{{email}}</span>
+            </div>
+            <div class="profile-info-item">
+                <span class="label"> Nombre</span>
+                <span class="value">{{first_name}} {{last_name}}</span>
+            </div>
+            <div class="profile-info-item">
+                <span class="label"> Rol</span>
+                <span class="value">{{role}}</span>
+            </div>
+        </div>
+
+        <div class="profile-actions">
+            <a href="/products" class="btn btn-secondary">Ver Productos</a>
+            {{#if (eq role "user")}}
+            <a href="/cart" class="btn btn-primary">🛒 Mi Carrito</a>
+            {{/if}}
+            {{#if (eq role "admin")}}
+            <a href="/admin/products" class="btn btn-warning">⚙️ Gestionar Productos</a>
+            {{/if}}
+            <button onclick="logout()" class="btn btn-danger">Cerrar Sesión</button>
+        </div>
+    </div>
+</div>
+
+<script>
+async function logout() {
+    await fetch('/api/sessions/logout', { method: 'POST' });
+    window.location.href = '/login';
+}
+</script>

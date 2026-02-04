@@ -12,4 +12,3 @@ export function createHash(password) {
 export function isValidPassword(password, hashedpassword) { 
     return bcrypt.compareSync(password, hashedpassword);
 }
-

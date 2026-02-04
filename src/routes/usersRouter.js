@@ -1,71 +1,19 @@
 import { Router } from "express";
-import { UserModel } from "../models/usersModel.js";
-import { createHash } from "../../utils.js";
+import { getUsers, getUserById, updateUser, deleteUser } from "../controllers/users.controller.js";
+import { authenticateJWT, isAdmin, isAdminOrSelf } from "../middlewares/auth.middleware.js";
 
 const router = Router();
 
-router.get("/", async (req, res, next) => {
-    try {
-        const users = await UserModel.find();
-        res.status(200).json(users);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-});
+// GET /api/users - Solo ADMIN
+router.get("/", authenticateJWT, isAdmin, getUsers);
 
-router.post("/register", async (req, res, next) => {
-    const { first_name, last_name, email, role, password } = req.body;
-    if (!first_name || !last_name || !email || !age || !role || !password) {
-        return res.status(400).json({ message: "All fields are required" });
-    }
-    if (await UserModel.findOne({ email })) {
-        return res.status(400).json({ message: "User already exists" });
-    }
-    try {
-        const user = await UserModel.create({
-            first_name,
-            last_name,
-            email,
-            role,
-            password: createHash(password),
-        });
-        res.status(201).json(user);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-});
+// GET /api/users/:id - Admin o el mismo usuario
+router.get("/:id", authenticateJWT, isAdminOrSelf, getUserById);
 
-router.put("/update/:id", async (req, res, next) => {
-    const { first_name, last_name, password } = req.body;
-    if (!first_name || !last_name || !password) {
-        return res.status(400).json({ message: "All fields are required" });
-    }
-    if (await UserModel.findOne({ email })) {
-        return res.status(400).json({ message: "User already exists" });
-    }
-    try {
-        const user = await UserModel.findByIdAndUpdate(
-            req.params.id,
-            req.body,
-            { new: true }
-        );
-        res.status(200).json(user);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-});
+// PUT /api/users/:id - Admin o el mismo usuario
+router.put("/:id", authenticateJWT, isAdminOrSelf, updateUser);
 
-router.delete("/delete/:id", async (req, res, next) => {
-    const { id } = req.params;
-    if (!id) {
-        return res.status(400).json({ message: "Id is required" });
-    }
-    try {
-        await UserModel.findByIdAndDelete(req.params.id);
-        res.status(200).json({ message: "User deleted successfully" });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-});
+// DELETE /api/users/:id - Solo ADMIN
+router.delete("/:id", authenticateJWT, isAdmin, deleteUser);
 
 export default router;
